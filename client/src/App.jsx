@@ -143,7 +143,14 @@ export default function App() {
       return <ProjectDetail project={selectedProject} onBack={handleBack} />;
     }
     if (view === 'bridge') {
-      return <BridgePanel agents={agents} tailscale={tailscale} />;
+      return (
+        <BridgePanel
+          agents={agents}
+          tailscale={tailscale}
+          currentView={view}
+          currentProject={selectedProject?.id || selectedProject?.key?.toLowerCase() || null}
+        />
+      );
     }
     return <ProjectList projects={projects} loading={loading} onSelect={handleProjectSelect} />;
   };

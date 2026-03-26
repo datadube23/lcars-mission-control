@@ -5,23 +5,26 @@
  * No database — markdown IS the database.
  *
  * Routes:
- *   GET /api/projects         — project list from INDEX.md + PROJECT-REGISTRY.md
- *   GET /api/project/:id      — per-project detail (ACTIVE-CONTEXT, TASKS, DECISIONS)
- *   GET /api/global           — aggregated Waiting-on-David, Blockers, What-Changed-Today
- *   GET /api/calendar         — icalBuddy events (today + 2 days)
- *   GET /api/agents           — agent roster from AGENT-ROSTER.md
- *   GET /api/tailscale        — tailscale status --json
- *   GET /events               — SSE stream (file watcher push)
+ *   GET /api/projects              — project list from INDEX.md + PROJECT-REGISTRY.md
+ *   GET /api/project/:id           — per-project detail (ACTIVE-CONTEXT, TASKS, DECISIONS)
+ *   GET /api/global                — aggregated Waiting-on-David, Blockers, What-Changed-Today
+ *   GET /api/calendar              — icalBuddy events (today + 2 days)
+ *   GET /api/agents                — agent roster from AGENT-ROSTER.md
+ *   GET /api/tailscale             — tailscale status --json
+ *   POST /api/agent/:agentId/chat  — send message to agent, SSE stream response
+ *   GET /api/agent/:agentId/history — last 10 messages from chat log
+ *   GET /events                    — SSE stream (file watcher push)
  */
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import staticFiles from '@fastify/static';
-import { readFile, readdir, access } from 'fs/promises';
+import { readFile, readdir, access, writeFile, mkdir, appendFile } from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import http from 'http';
 import chokidar from 'chokidar';
 
 const execAsync = promisify(exec);
@@ -33,6 +36,9 @@ const WORKSPACE = process.env.WORKSPACE_PATH || '/Users/data/.openclaw/workspace
 const PASSPHRASE = process.env.PASSPHRASE || 'enterprise';
 const DIST_DIR = resolve(__dirname, '../dist');
 const PROJECTS_DIR = join(WORKSPACE, 'projects');
+const CHAT_LOGS_DIR = join(WORKSPACE, 'projects/mission-control-dashboard/chat-logs');
+const OPENCLAW_GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://localhost:18789';
+const OPENCLAW_GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || '164072d26ca7eca4e18b1fdc22fbf36354a66bd49bbf5a2a';
 
 // ─── SSE Clients ───────────────────────────────────────────────────────────
 const sseClients = new Set();
@@ -465,7 +471,6 @@ app.get('/api/agents', async (req, reply) => {
   if (!exists) {
     const defaultRoster = getDefaultAgentRoster();
     try {
-      const { writeFile } = await import('fs/promises');
       await writeFile(rosterPath, defaultRoster, 'utf8');
       console.log('[agents] created default AGENT-ROSTER.md');
     } catch (e) {
@@ -557,6 +562,237 @@ app.get('/api/tailscale', async (req, reply) => {
     return reply.send({ nodes: [], error: err.message });
   }
 });
+
+// ─── Agent Chat History ────────────────────────────────────────────────────
+app.get('/api/agent/:agentId/history', async (req, reply) => {
+  const { agentId } = req.params;
+  const logFile = join(CHAT_LOGS_DIR, `${agentId}.jsonl`);
+
+  try {
+    await mkdir(CHAT_LOGS_DIR, { recursive: true });
+  } catch { /* exists */ }
+
+  try {
+    const content = await readFile(logFile, 'utf8');
+    const lines = content.trim().split('\n').filter(Boolean);
+    const messages = lines.slice(-10).map((line) => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter(Boolean);
+    return reply.send({ messages });
+  } catch {
+    return reply.send({ messages: [] });
+  }
+});
+
+// ─── Agent Chat — Streaming via SSE ────────────────────────────────────────
+app.post('/api/agent/:agentId/chat', async (req, reply) => {
+  const { agentId } = req.params;
+  const { message, context = {} } = req.body || {};
+
+  if (!message || typeof message !== 'string') {
+    return reply.code(400).send({ error: 'message required' });
+  }
+
+  const { currentView = 'bridge', currentProject = null } = context;
+
+  // Build context-prepended message (silent prefix)
+  let contextNote = `[Context: User is viewing "${currentView}" panel`;
+  if (currentProject) contextNote += `, active project: "${currentProject}"`;
+  contextNote += `]`;
+  const fullMessage = `${contextNote}\n\n${message}`;
+
+  // Ensure chat-logs dir exists
+  try { await mkdir(CHAT_LOGS_DIR, { recursive: true }); } catch { /* exists */ }
+
+  const logFile = join(CHAT_LOGS_DIR, `${agentId}.jsonl`);
+  const sessionKey = `agent:main:webchat:crew:${agentId}`;
+  const ts = new Date().toISOString();
+
+  // Log user message
+  try {
+    await appendFile(logFile, JSON.stringify({ role: 'user', content: message, ts }) + '\n');
+  } catch { /* non-fatal */ }
+
+  // Set SSE headers
+  const res = reply.raw;
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+
+  // Helper to send SSE events
+  const sendEvent = (event, data) => {
+    try {
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    } catch { /* client disconnected */ }
+  };
+
+  sendEvent('start', { agentId, ts });
+
+  // Try OpenClaw gateway first
+  const gatewayWorked = await tryGatewayStream(agentId, sessionKey, fullMessage, message, sendEvent, logFile);
+
+  if (!gatewayWorked) {
+    // Fall back to mock streaming response
+    await mockAgentStream(agentId, message, context, sendEvent, logFile);
+  }
+
+  res.end();
+  // Don't return (SSE keeps alive until res.end())
+  await new Promise((r) => setTimeout(r, 0));
+});
+
+/**
+ * Try to stream a response from the OpenClaw gateway.
+ * Returns true if successful, false if gateway is unavailable.
+ */
+async function tryGatewayStream(agentId, sessionKey, fullMessage, rawMessage, sendEvent, logFile) {
+  return new Promise((resolve) => {
+    const body = JSON.stringify({
+      model: 'openclaw',
+      stream: true,
+      messages: [{ role: 'user', content: fullMessage }],
+    });
+
+    const urlObj = new URL(`${OPENCLAW_GATEWAY_URL}/v1/chat/completions`);
+    const options = {
+      hostname: urlObj.hostname,
+      port: parseInt(urlObj.port || '80', 10),
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'Authorization': `Bearer ${OPENCLAW_GATEWAY_TOKEN}`,
+        'x-openclaw-agent-id': 'main',
+        'x-openclaw-session-key': sessionKey,
+        'x-openclaw-message-channel': 'webchat',
+      },
+      timeout: 5000,
+    };
+
+    const req = http.request(options, (gatewayRes) => {
+      if (gatewayRes.statusCode !== 200) {
+        gatewayRes.resume();
+        return resolve(false);
+      }
+
+      let fullResponse = '';
+      gatewayRes.setEncoding('utf8');
+
+      gatewayRes.on('data', (chunk) => {
+        // Parse SSE chunks from OpenAI-compatible format
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const dataStr = line.slice(6).trim();
+          if (dataStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(dataStr);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullResponse += delta;
+              sendEvent('token', { token: delta });
+            }
+          } catch { /* skip malformed chunks */ }
+        }
+      });
+
+      gatewayRes.on('end', async () => {
+        sendEvent('done', { agentId });
+        // Log agent response
+        try {
+          const ts = new Date().toISOString();
+          await appendFile(logFile, JSON.stringify({ role: 'assistant', content: fullResponse, agentId, ts }) + '\n');
+        } catch { /* non-fatal */ }
+        resolve(true);
+      });
+
+      gatewayRes.on('error', () => resolve(false));
+    });
+
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
+    });
+
+    req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * Mock streaming response when OpenClaw gateway is unreachable.
+ * Returns a personality-appropriate placeholder response.
+ */
+async function mockAgentStream(agentId, message, context, sendEvent, logFile) {
+  const { currentView, currentProject } = context;
+
+  const responses = {
+    data: getMockDataResponse(message, currentView, currentProject),
+    worf: getMockWorfResponse(message, currentView, currentProject),
+  };
+
+  const responseText = responses[agentId.toLowerCase()] || responses.data;
+
+  // Stream word by word for realism
+  const words = responseText.split(' ');
+  let fullText = '';
+
+  for (let i = 0; i < words.length; i++) {
+    const token = (i === 0 ? '' : ' ') + words[i];
+    fullText += token;
+    sendEvent('token', { token });
+    // Variable delay: short pauses between words, longer at punctuation
+    const hasPunct = /[.,!?;:]/.test(words[i]);
+    await new Promise((r) => setTimeout(r, hasPunct ? 80 : 25));
+  }
+
+  sendEvent('done', { agentId, mock: true });
+
+  // Log mock response
+  try {
+    const ts = new Date().toISOString();
+    await appendFile(logFile, JSON.stringify({ role: 'assistant', content: fullText, agentId, ts, mock: true }) + '\n');
+  } catch { /* non-fatal */ }
+}
+
+function getMockDataResponse(message, currentView, currentProject) {
+  const msg = message.toLowerCase();
+
+  if (msg.includes('status') || msg.includes('how')) {
+    return `All systems nominal, Commander. I am currently monitoring ${currentProject ? `the ${currentProject} project` : 'all active projects'}. My analytical subroutines are functioning within expected parameters. The OpenClaw gateway connection is currently offline — I am operating in local mode. I recommend verifying gateway connectivity when convenient.`;
+  }
+  if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+    return `Good ${getTimeOfDay()}, Commander. Lieutenant Commander Data reporting. I am ready to assist with any queries regarding ${currentView === 'bridge' ? 'fleet operations' : `the ${currentView} view`}. Note: I am currently operating without gateway connectivity. Responses are generated locally.`;
+  }
+  if (msg.includes('help')) {
+    return `Understood, Commander. I can assist with project status analysis, task prioritization, agent fleet coordination, and technical assessments. Currently viewing: ${currentView}${currentProject ? `, project: ${currentProject}` : ''}. However, I must note that I am in local mode — full AI capabilities require OpenClaw gateway connectivity on port 18789.`;
+  }
+  return `Acknowledged, Commander. I have received your message regarding "${message.slice(0, 40)}${message.length > 40 ? '...' : ''}". While I am capable of processing this query, I am currently operating in local mode without gateway connectivity. To enable full AI responses, please verify the OpenClaw gateway configuration includes the HTTP chat completions endpoint. Current view: ${currentView}.`;
+}
+
+function getMockWorfResponse(message, currentView, currentProject) {
+  const msg = message.toLowerCase();
+
+  if (msg.includes('status') || msg.includes('how')) {
+    return `OFFLINE. Gateway unreachable. Worf cannot respond from this terminal without active communications. Restore the gateway link.`;
+  }
+  if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+    return `Commander. I am here. But this channel runs through local simulation — the real Worf is unreachable until gateway connectivity is restored. Make it quick.`;
+  }
+  return `Message received. Gateway offline. This is a local placeholder — not a live response from Worf. Fix the gateway connection and I will be ready. ${currentProject ? `Project ${currentProject} requires attention.` : ''}`;
+}
+
+function getTimeOfDay() {
+  const h = new Date().getHours();
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  return 'evening';
+}
 
 // ─── SSE Endpoint ──────────────────────────────────────────────────────────
 app.get('/events', async (req, reply) => {

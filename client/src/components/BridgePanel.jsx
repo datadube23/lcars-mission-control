@@ -1,12 +1,13 @@
 /**
  * BridgePanel
  * "The Bridge" — agent command center.
- * Shows: Agent Roster + Tailscale Network View.
+ * Shows: Agent Roster + Tailscale Network View + Crew Comms Chat.
  * Toggle between views via tab.
  */
 
 import { useState } from 'react';
 import AgentCard from './AgentCard.jsx';
+import BridgeChatPanel from './BridgeChatPanel.jsx';
 
 function NetworkNode({ node }) {
   return (
@@ -58,7 +59,7 @@ function NetworkNode({ node }) {
   );
 }
 
-export default function BridgePanel({ agents = [], tailscale }) {
+export default function BridgePanel({ agents = [], tailscale, currentView = 'bridge', currentProject = null }) {
   const [tab, setTab] = useState('agents'); // 'agents' | 'network'
 
   const nodes = tailscale?.nodes || [];
@@ -97,6 +98,13 @@ export default function BridgePanel({ agents = [], tailscale }) {
           >
             Network View
           </button>
+          <button
+            className={`project-detail__tab ${tab === 'comms' ? 'active' : ''}`}
+            onClick={() => setTab('comms')}
+            style={tab === 'comms' ? { color: 'var(--lcars-gold)', borderBottomColor: 'var(--lcars-gold)' } : {}}
+          >
+            Crew Comms
+          </button>
         </div>
       </div>
 
@@ -113,25 +121,26 @@ export default function BridgePanel({ agents = [], tailscale }) {
             </div>
           )}
 
-          {/* Phase 2 teaser */}
+          {/* Crew Comms teaser — click to switch to comms tab */}
           <div
             style={{
               marginTop: 24,
               padding: '12px 16px',
               background: 'var(--lcars-panel)',
-              border: '1px dashed var(--lcars-panel-border)',
+              border: '1px solid rgba(204,136,0,0.25)',
               borderRadius: 4,
+              cursor: 'pointer',
             }}
+            onClick={() => setTab('comms')}
           >
             <div
               className="lcars-label"
-              style={{ color: 'var(--lcars-gray)', marginBottom: 6 }}
+              style={{ color: 'var(--lcars-gold)', marginBottom: 6 }}
             >
-              Phase 2 — Agent Controls
+              ▶ Crew Comms — Active
             </div>
             <div style={{ fontSize: 12, color: 'var(--lcars-gray)', lineHeight: 1.5 }}>
-              Coming in Phase 2: Send requests to agents, assign tasks, swap models,
-              view task logs, and see token/cost summaries from the dashboard.
+              Direct comms channel with Data and Worf. Tap to open the Crew Comms console.
             </div>
           </div>
         </div>
@@ -169,6 +178,15 @@ export default function BridgePanel({ agents = [], tailscale }) {
             </>
           )}
         </div>
+      )}
+
+      {/* Crew Comms */}
+      {tab === 'comms' && (
+        <BridgeChatPanel
+          currentView={currentView}
+          currentProject={currentProject}
+          agents={agents}
+        />
       )}
     </div>
   );
