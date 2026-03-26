@@ -1,0 +1,27 @@
+{
+  "name": "lcars-mission-control",
+  "version": "1.0.0",
+  "description": "LCARS-themed AI agent command center for MR_DATA fleet",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "node --env-file=.env src/server.js",
+    "dev:client": "cd client && npx vite",
+    "build": "cd client && npx vite build --outDir /Users/data/lcars-mission-control/dist --emptyOutDir && cd .. && cp client/public/manifest.json dist/ && cp client/public/sw.js dist/",
+    "start": "node --env-file=.env src/server.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "fastify": "^4.29.0",
+    "fastify-plugin": "^4.5.1",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/static": "^7.0.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^6.2.2"
+  }
+}
