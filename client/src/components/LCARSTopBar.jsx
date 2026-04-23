@@ -8,6 +8,7 @@ export default function LCARSTopBar({ view, onNav, sseConnected, lastUpdate }) {
   const navItems = [
     { id: 'projects', label: 'Projects' },
     { id: 'bridge', label: 'The Bridge' },
+    { id: 'engineering', label: 'Engineering' },
   ];
 
   return (
@@ -41,7 +42,7 @@ export default function LCARSTopBar({ view, onNav, sseConnected, lastUpdate }) {
           <span
             style={{
               fontFamily: 'var(--font-lcars)',
-              fontSize: 10,
+              fontSize: 'var(--text-meta)',
               textTransform: 'uppercase',
               letterSpacing: '0.12em',
               color: 'rgba(10,10,18,0.6)',

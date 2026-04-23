@@ -100,7 +100,7 @@ export default function ProjectDetail({ project, onBack }) {
           <span
             style={{
               fontFamily: 'var(--font-lcars)',
-              fontSize: 11,
+              fontSize: 'var(--text-meta)',
               letterSpacing: '0.2em',
               color: 'var(--lcars-gray)',
               textTransform: 'uppercase',
@@ -111,7 +111,7 @@ export default function ProjectDetail({ project, onBack }) {
           <span
             style={{
               fontFamily: 'var(--font-lcars)',
-              fontSize: 22,
+              fontSize: 'var(--text-body)',
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.1em',

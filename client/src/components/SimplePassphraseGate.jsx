@@ -53,7 +53,7 @@ export default function SimplePassphraseGate({ onAuth }) {
         <div style={{ width: '100%', height: 1, background: 'var(--lcars-panel-border)' }} />
         <div
           className="lcars-label"
-          style={{ color: 'var(--lcars-gray-light)', fontSize: 10 }}
+          style={{ color: 'var(--lcars-gray-light)', fontSize: 'var(--text-meta)' }}
         >
           AUTHORIZATION REQUIRED
         </div>

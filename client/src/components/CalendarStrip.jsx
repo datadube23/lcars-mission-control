@@ -6,7 +6,7 @@
 export default function CalendarStrip({ events, loading }) {
   if (loading) {
     return (
-      <div className="lcars-loading" style={{ fontSize: 10 }}>
+      <div className="lcars-loading">
         <div className="lcars-loading__bar"><div className="lcars-loading__progress" /></div>
       </div>
     );
@@ -28,7 +28,7 @@ export default function CalendarStrip({ events, loading }) {
             <div
               style={{
                 fontFamily: 'var(--font-lcars)',
-                fontSize: 9,
+                fontSize: 'var(--text-meta)',
                 letterSpacing: '0.1em',
                 color: 'var(--lcars-gray)',
                 textTransform: 'uppercase',

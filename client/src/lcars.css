@@ -58,6 +58,12 @@
   --font-lcars:           'Antonio', 'Share Tech Mono', monospace;
   --font-body:            'Helvetica Neue', -apple-system, sans-serif;
 
+  /* Typography scale — DO NOT go below --text-meta (14px is the absolute floor) */
+  --text-body:            18px;   /* primary prose, messages, body copy */
+  --text-secondary:       16px;   /* descriptions, secondary prose */
+  --text-label:           15px;   /* LCARS headings, nav labels */
+  --text-meta:            14px;   /* metadata, timestamps, small chrome — FLOOR */
+
   /* Spacing */
   --lcars-bar-height:     52px;
   --lcars-sidebar-width:  320px;
@@ -99,7 +105,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  font-size: 15px;
+  font-size: var(--text-label);
   color: var(--lcars-gray-light);
 }
 
@@ -112,7 +118,7 @@ body {
 
 .lcars-readout {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 14px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray-light);
   letter-spacing: 0.05em;
 }
@@ -165,7 +171,7 @@ body {
 
 .lcars-topbar__subtitle {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.25em;
   color: rgba(10, 10, 18, 0.6);
@@ -180,7 +186,7 @@ body {
 
 .lcars-topbar__nav-btn {
   font-family: var(--font-lcars);
-  font-size: 14px;
+  font-size: var(--text-meta);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -191,7 +197,7 @@ body {
   transition: all var(--transition-fast);
   background: rgba(10, 10, 18, 0.3);
   color: var(--lcars-bg);
-  min-height: 32px;
+  min-height: 44px;
   min-width: 80px;
 }
 
@@ -213,7 +219,7 @@ body {
 
 .lcars-topbar__sidebar-label {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -316,7 +322,7 @@ body {
 
 .lcars-bottombar__status {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -360,7 +366,7 @@ body {
 
 .lcars-panel__title {
   font-family: var(--font-lcars);
-  font-size: 14px;
+  font-size: var(--text-meta);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.18em;
@@ -370,7 +376,7 @@ body {
 .lcars-panel__badge {
   margin-left: auto;
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 12px;
@@ -390,7 +396,7 @@ body {
   align-items: center;
   gap: 5px;
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -431,7 +437,7 @@ body {
 /* ─── Priority Badge ─────────────────────────────────────────────────────── */
 .lcars-priority {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 3px;
@@ -486,7 +492,7 @@ body {
 
 .project-card__key {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 700;
   letter-spacing: 0.2em;
   color: var(--lcars-gray);
@@ -495,7 +501,7 @@ body {
 
 .project-card__name {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-secondary);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -512,13 +518,13 @@ body {
 }
 
 .project-card__owner {
-  font-size: 15px;
+  font-size: var(--text-label);
   color: var(--lcars-gray-light);
 }
 
 .project-card__updated {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 15px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray);
   margin-left: auto;
 }
@@ -550,14 +556,14 @@ body {
 }
 
 .sidebar-item__text {
-  font-size: 14px;
+  font-size: var(--text-meta);
   color: var(--lcars-space-white);
   line-height: 1.4;
 }
 
 .sidebar-item__project {
   font-family: var(--font-lcars);
-  font-size: 13px;
+  font-size: var(--text-meta);
   letter-spacing: 0.1em;
   color: var(--lcars-gray);
   text-transform: uppercase;
@@ -575,20 +581,20 @@ body {
 }
 
 .calendar-event__title {
-  font-size: 14px;
+  font-size: var(--text-meta);
   color: var(--lcars-space-white);
   line-height: 1.3;
 }
 
 .calendar-event__time {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 15px;
+  font-size: var(--text-meta);
   color: var(--lcars-ice);
   margin-top: 2px;
 }
 
 .calendar-empty {
-  font-size: 15px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray);
   font-style: italic;
   padding: 6px 0;
@@ -635,7 +641,7 @@ body {
 
 .agent-card__name {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -657,7 +663,7 @@ body {
 
 .agent-card__key {
   font-family: var(--font-lcars);
-  font-size: 13px;
+  font-size: var(--text-meta);
   letter-spacing: 0.12em;
   color: var(--lcars-gray);
   text-transform: uppercase;
@@ -666,7 +672,7 @@ body {
 }
 
 .agent-card__val {
-  font-size: 15px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray-light);
 }
 
@@ -676,7 +682,7 @@ body {
   align-items: center;
   gap: 8px;
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: var(--lcars-gold);
@@ -701,11 +707,12 @@ body {
 
 .project-detail__tab {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   padding: 8px 16px;
+  min-height: 44px;
   border: none;
   background: none;
   color: var(--lcars-gray);
@@ -726,7 +733,7 @@ body {
 
 /* ─── Markdown Content ───────────────────────────────────────────────────── */
 .markdown-content {
-  font-size: 15px;
+  font-size: var(--text-secondary);
   line-height: 1.6;
   color: var(--lcars-space-white);
 }
@@ -741,9 +748,9 @@ body {
   margin: 16px 0 8px;
 }
 
-.markdown-content h1 { font-size: 18px; }
-.markdown-content h2 { font-size: 15px; }
-.markdown-content h3 { font-size: 14px; color: var(--lcars-golden-orange); }
+.markdown-content h1 { font-size: var(--text-body); }
+.markdown-content h2 { font-size: var(--text-secondary); }
+.markdown-content h3 { font-size: var(--text-label); color: var(--lcars-golden-orange); }
 
 .markdown-content p { margin: 6px 0; }
 
@@ -756,7 +763,7 @@ body {
 
 .markdown-content code {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 15px;
+  font-size: var(--text-meta);
   background: var(--lcars-panel-raised);
   padding: 1px 5px;
   border-radius: 3px;
@@ -775,13 +782,13 @@ body {
 .markdown-content table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--text-meta);
   margin: 8px 0;
 }
 
 .markdown-content th {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 6px 8px;
@@ -833,7 +840,7 @@ body {
 
 .lcars-gate__subtitle {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.25em;
   color: var(--lcars-gray);
@@ -867,7 +874,7 @@ body {
   border: none;
   border-radius: 4px;
   font-family: var(--font-lcars);
-  font-size: 14px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -881,7 +888,7 @@ body {
 
 .lcars-gate__error {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--lcars-tomato);
@@ -893,7 +900,7 @@ body {
   align-items: center;
   gap: 8px;
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: var(--lcars-gray);
@@ -922,7 +929,7 @@ body {
 /* ─── Empty State ────────────────────────────────────────────────────────── */
 .lcars-empty {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: var(--lcars-gray);
@@ -977,13 +984,13 @@ body {
 
 .network-node__hostname {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 14px;
+  font-size: var(--text-meta);
   color: var(--lcars-space-white);
 }
 
 .network-node__ip {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 15px;
+  font-size: var(--text-meta);
   color: var(--lcars-ice);
   margin-left: auto;
 }
@@ -991,7 +998,7 @@ body {
 /* ─── Section Heading ────────────────────────────────────────────────────── */
 .lcars-section-heading {
   font-family: var(--font-lcars);
-  font-size: 15px;
+  font-size: var(--text-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
@@ -1019,7 +1026,7 @@ body {
 .mt-3 { margin-top: 12px; }
 .ml-auto { margin-left: auto; }
 .text-muted { color: var(--lcars-gray); }
-.text-sm { font-size: 15px; }
+.text-sm { font-size: var(--text-label); }
 
 /* ─── Bridge Chat Panel ──────────────────────────────────────────────────── */
 .bridge-chat-panel {
@@ -1056,7 +1063,7 @@ body {
 
 .bridge-chat-panel__title {
   font-family: var(--font-lcars);
-  font-size: 18px;
+  font-size: var(--text-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -1065,7 +1072,7 @@ body {
 
 .bridge-chat-panel__subtitle {
   font-family: var(--font-lcars);
-  font-size: 9px;
+  font-size: var(--text-meta);
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: var(--lcars-gray);
@@ -1117,14 +1124,14 @@ body {
 }
 
 .bridge-chat-panel__agent-tab-name {
-  font-size: 14px;
+  font-size: var(--text-meta);
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .bridge-chat-panel__agent-tab-status {
-  font-size: 9px;
+  font-size: var(--text-meta);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   font-weight: 400;
@@ -1173,7 +1180,7 @@ body {
 
 .bridge-chat-panel__empty-agent {
   font-family: var(--font-lcars);
-  font-size: 12px;
+  font-size: var(--text-meta);
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1181,7 +1188,7 @@ body {
 
 .bridge-chat-panel__empty-tagline {
   font-family: var(--font-lcars);
-  font-size: 16px;
+  font-size: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -1189,7 +1196,7 @@ body {
 }
 
 .bridge-chat-panel__empty-personality {
-  font-size: 12px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray);
   font-style: italic;
   letter-spacing: 0.03em;
@@ -1210,7 +1217,7 @@ body {
 
 .chat-msg__user-label {
   font-family: var(--font-lcars);
-  font-size: 9px;
+  font-size: var(--text-meta);
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1223,7 +1230,7 @@ body {
   border: 1px solid var(--lcars-panel-border);
   border-radius: 4px 4px 0 4px;
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: var(--text-secondary);
   color: var(--lcars-space-white);
   line-height: 1.5;
   white-space: pre-wrap;
@@ -1253,7 +1260,7 @@ body {
 
 .chat-msg__agent-name {
   font-family: var(--font-lcars);
-  font-size: 10px;
+  font-size: var(--text-meta);
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1264,7 +1271,7 @@ body {
 }
 
 .chat-msg__agent-text {
-  font-size: 14px;
+  font-size: var(--text-secondary);
   color: var(--lcars-space-white);
   line-height: 1.6;
   white-space: pre-wrap;
@@ -1273,13 +1280,13 @@ body {
 
 .chat-msg__time {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray);
   margin-top: 4px;
 }
 
 .chat-msg__mock-badge {
-  font-size: 8px;
+  font-size: var(--text-meta);
   letter-spacing: 0.15em;
   background: rgba(102,102,136,0.3);
   color: var(--lcars-gray);
@@ -1313,7 +1320,7 @@ body {
 
 .chat-streaming__label {
   font-family: var(--font-lcars);
-  font-size: 10px;
+  font-size: var(--text-meta);
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1349,7 +1356,7 @@ body {
   background: rgba(204,68,68,0.15);
   border: 1px solid rgba(204,68,68,0.4);
   border-radius: 4px;
-  font-size: 12px;
+  font-size: var(--text-meta);
   color: var(--lcars-tomato);
   font-family: var(--font-lcars);
   letter-spacing: 0.08em;
@@ -1392,14 +1399,14 @@ body {
 
 .bridge-chat-panel__offline-title {
   font-family: var(--font-lcars);
-  font-size: 12px;
+  font-size: var(--text-meta);
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
 .bridge-chat-panel__offline-sub {
-  font-size: 11px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray);
   margin-top: 3px;
   line-height: 1.4;
@@ -1423,26 +1430,26 @@ body {
 }
 
 .bridge-chat-panel__context-label {
-  font-size: 9px;
+  font-size: var(--text-meta);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--lcars-gray);
 }
 
 .bridge-chat-panel__context-value {
-  font-size: 9px;
+  font-size: var(--text-meta);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   font-weight: 600;
 }
 
 .bridge-chat-panel__context-sep {
-  font-size: 9px;
+  font-size: var(--text-meta);
   color: var(--lcars-gray);
 }
 
 .bridge-chat-panel__context-agent {
-  font-size: 9px;
+  font-size: var(--text-meta);
   letter-spacing: 0.15em;
   text-transform: uppercase;
   font-weight: 600;
@@ -1462,12 +1469,12 @@ body {
   border-radius: 4px;
   color: var(--lcars-space-white);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: var(--text-secondary);
   padding: 9px 12px;
   resize: none;
   outline: none;
   transition: border-color var(--transition-fast);
-  min-height: 40px;
+  min-height: 44px;
   max-height: 100px;
   line-height: 1.4;
 }
@@ -1489,7 +1496,7 @@ body {
 
 .bridge-chat-panel__send-btn {
   font-family: var(--font-lcars);
-  font-size: 13px;
+  font-size: var(--text-meta);
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -1497,7 +1504,7 @@ body {
   border: none;
   border-radius: 4px;
   padding: 0 18px;
-  height: 40px;
+  height: 44px;
   min-width: 72px;
   flex-shrink: 0;
   transition: opacity var(--transition-fast), transform var(--transition-fast);
@@ -1517,7 +1524,7 @@ body {
 }
 
 .bridge-chat-panel__send-processing {
-  font-size: 10px;
+  font-size: var(--text-meta);
   animation: processing-blink 0.6s step-end infinite;
 }
 
@@ -1533,9 +1540,9 @@ body {
     --lcars-bar-height: 44px;
   }
 
-  .lcars-topbar__title { font-size: 16px; }
+  .lcars-topbar__title { font-size: var(--text-secondary); }
   .lcars-topbar__subtitle { display: none; }
-  .lcars-topbar__nav-btn { font-size: 11px; padding: 6px 10px; min-width: 60px; }
+  .lcars-topbar__nav-btn { font-size: var(--text-meta); padding: 6px 10px; min-width: 60px; }
 }
 
 /* Mobile (< 768px) — stack layout vertically */
@@ -1574,7 +1581,7 @@ body {
     gap: 12px;
   }
 
-  .lcars-topbar__title { font-size: 15px; letter-spacing: 0.15em; }
+  .lcars-topbar__title { font-size: var(--text-label); letter-spacing: 0.15em; }
   .lcars-topbar__subtitle { display: none; }
 
   .lcars-topbar__nav {
@@ -1582,10 +1589,10 @@ body {
   }
 
   .lcars-topbar__nav-btn {
-    font-size: 10px;
+    font-size: var(--text-meta);
     padding: 4px 8px;
     min-width: 44px;
-    min-height: 36px;
+    min-height: 44px;
     letter-spacing: 0.08em;
   }
 
@@ -1634,7 +1641,7 @@ body {
   }
 
   .project-card__name {
-    font-size: 15px !important;
+    font-size: var(--text-label) !important;
   }
 
   /* Bridge panel: full width tabs */
@@ -1651,7 +1658,7 @@ body {
   .bridge-panel__tabs::-webkit-scrollbar { display: none; }
 
   .bridge-tab-btn {
-    font-size: 11px !important;
+    font-size: var(--text-meta) !important;
     padding: 8px 12px !important;
     white-space: nowrap;
   }
@@ -1684,13 +1691,13 @@ body {
   }
 
   .bridge-chat-panel__input {
-    font-size: 16px !important; /* prevent iOS zoom on focus */
+    font-size: 16px !important; /* prevent iOS zoom on focus — intentional override */
   }
 
   .bridge-chat-panel__send-btn {
     padding: 0 14px;
     min-width: 60px;
-    font-size: 11px !important;
+    font-size: var(--text-meta) !important;
   }
 
   /* Sidebar global panels: compact on mobile */
@@ -1700,12 +1707,12 @@ body {
   }
 
   .sidebar-panel__title {
-    font-size: 12px;
+    font-size: var(--text-meta);
   }
 
   /* Calendar strip */
   .calendar-event {
-    font-size: 13px;
+    font-size: var(--text-meta);
   }
 
   /* Passphrase gate: full screen on mobile */
@@ -1724,7 +1731,7 @@ body {
 
   /* Global command panel labels */
   .global-panel__item {
-    font-size: 14px;
+    font-size: var(--text-meta);
     padding: 8px 0;
     border-bottom: 1px solid var(--lcars-panel-border);
   }
@@ -1732,14 +1739,14 @@ body {
 
 /* Small phones (< 430px) */
 @media (max-width: 430px) {
-  .lcars-topbar__nav-btn { padding: 4px 6px; min-width: 36px; font-size: 9px; }
-  .lcars-topbar__title { font-size: 13px; letter-spacing: 0.1em; }
+  .lcars-topbar__nav-btn { padding: 4px 6px; min-width: 36px; font-size: var(--text-meta); }
+  .lcars-topbar__title { font-size: var(--text-label); letter-spacing: 0.1em; }
 
   .bridge-chat-panel__messages {
     height: 40vh;
   }
 
-  .project-card__name { font-size: 14px !important; }
+  .project-card__name { font-size: var(--text-label) !important; }
 }
 
 /* iPhone landscape — sidebar beside content again but compact */

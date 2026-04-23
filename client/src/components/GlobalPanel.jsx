@@ -5,7 +5,7 @@
  */
 
 import CalendarStrip from './CalendarStrip.jsx';
-import AgentCard from './AgentCard.jsx';
+import AgentCard, { AgentCardCompact } from './AgentCard.jsx';
 
 function SidebarSection({ title, accentColor, badge, children }) {
   return (
@@ -61,7 +61,7 @@ export default function GlobalPanel({ globalData, calendar, agents, loading }) {
         badge={waitingOnDavid.length || null}
       >
         {loading ? (
-          <div className="lcars-loading" style={{ fontSize: 10 }}>
+          <div className="lcars-loading">
             <div className="lcars-loading__bar"><div className="lcars-loading__progress" /></div>
           </div>
         ) : (
@@ -80,7 +80,7 @@ export default function GlobalPanel({ globalData, calendar, agents, loading }) {
         badge={blockers.length || null}
       >
         {loading ? (
-          <div className="lcars-loading" style={{ fontSize: 10 }}>
+          <div className="lcars-loading">
             <div className="lcars-loading__bar"><div className="lcars-loading__progress" /></div>
           </div>
         ) : (
@@ -99,7 +99,7 @@ export default function GlobalPanel({ globalData, calendar, agents, loading }) {
         badge={whatChanged.length || null}
       >
         {loading ? (
-          <div className="lcars-loading" style={{ fontSize: 10 }}>
+          <div className="lcars-loading">
             <div className="lcars-loading__bar"><div className="lcars-loading__progress" /></div>
           </div>
         ) : (
@@ -127,7 +127,7 @@ export default function GlobalPanel({ globalData, calendar, agents, loading }) {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {agents.map((agent) => (
-              <AgentCard key={agent.name} agent={agent} compact />
+              <AgentCardCompact key={agent.name} agent={agent} />
             ))}
           </div>
         </SidebarSection>

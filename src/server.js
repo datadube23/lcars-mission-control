@@ -11,6 +11,8 @@
  *   GET /api/calendar              — icalBuddy events (today + 2 days)
  *   GET /api/agents                — agent roster from AGENT-ROSTER.md
  *   GET /api/tailscale             — tailscale status --json
+ *   GET /api/agent/:agentId/state  — agent current task/status from agent-state/*.md
+ *   GET /api/telemetry?window=     — agent token/cost telemetry (Data live, Worf via relay)
  *   POST /api/agent/:agentId/chat  — send message to agent, SSE stream response
  *   GET /api/agent/:agentId/history — last 10 messages from chat log
  *   GET /events                    — SSE stream (file watcher push)
@@ -563,6 +565,156 @@ app.get('/api/tailscale', async (req, reply) => {
   }
 });
 
+// ─── Agent State ──────────────────────────────────────────────────────────
+// Reads agent-state/<agentId>.md — written by agents when they begin/complete work.
+// Stale threshold: 2 hours. Absent file = graceful degradation, not an error.
+
+const AGENT_STATE_DIR = join(WORKSPACE, 'projects/mission-control-dashboard/agent-state');
+
+function parseAgentState(raw) {
+  const lines = raw.trim().split('\n');
+  const state = {};
+  for (const line of lines) {
+    const idx = line.indexOf(':');
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim().toLowerCase().replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    state[key] = line.slice(idx + 1).trim();
+  }
+  return state;
+}
+
+app.get('/api/agent/:agentId/state', async (req, reply) => {
+  const { agentId } = req.params;
+  const stateFile = join(AGENT_STATE_DIR, `${agentId.toLowerCase()}.md`);
+  try {
+    const raw = await readFile(stateFile, 'utf8');
+    const state = parseAgentState(raw);
+    const updatedAt = state.updated ? new Date(state.updated) : null;
+    const staleMs = updatedAt ? Date.now() - updatedAt.getTime() : Infinity;
+    const staleThresholdMs = 2 * 60 * 60 * 1000; // 2 hours
+    return reply.send({
+      ...state,
+      stale: staleMs > staleThresholdMs,
+      staleMinutes: Math.round(staleMs / 60000),
+      found: true,
+    });
+  } catch {
+    return reply.send({ found: false, stale: true });
+  }
+});
+
+// ─── Telemetry ────────────────────────────────────────────────────────────
+// Reads Data's JSONL session files and aggregates token/cost metrics.
+// Worf's telemetry: fetched from the relay service on Lennox (WORF_TELEMETRY_URL).
+// Falls back to a clearly-marked stub when relay is unavailable.
+
+const SESSIONS_DIR = process.env.SESSIONS_DIR || '/Users/data/.openclaw/agents/main/sessions';
+const WORF_TELEMETRY_URL = process.env.WORF_TELEMETRY_URL || '';
+const WORF_RELAY_TOKEN = process.env.WORF_RELAY_TOKEN || '';
+
+async function getDataTelemetry(windowDays) {
+  const cutoff = windowDays === 'today'
+    ? new Date(new Date().setHours(0, 0, 0, 0))
+    : new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+
+  let totalTokens = 0;
+  let totalCost = 0;
+  let messageCount = 0;
+  let lastActive = null;
+  const modelCounts = {};
+  const providerCounts = {};
+  const byDate = {};
+
+  try {
+    const files = await readdir(SESSIONS_DIR);
+    for (const f of files) {
+      if (!f.endsWith('.jsonl')) continue;
+      try {
+        const content = await readFile(join(SESSIONS_DIR, f), 'utf8');
+        const lines = content.trim().split('\n').filter(Boolean);
+        for (const line of lines) {
+          try {
+            const obj = JSON.parse(line);
+            if (obj.type !== 'message' || !obj.message?.usage) continue;
+            const ts = new Date(obj.timestamp);
+            if (ts < cutoff) continue;
+            const u = obj.message.usage;
+            totalTokens += u.totalTokens || 0;
+            totalCost += u.cost?.total || 0;
+            messageCount++;
+            if (!lastActive || ts > new Date(lastActive)) lastActive = obj.timestamp;
+            const model = obj.message.model || 'unknown';
+            modelCounts[model] = (modelCounts[model] || 0) + (u.totalTokens || 0);
+            const provider = obj.message.provider || 'unknown';
+            providerCounts[provider] = (providerCounts[provider] || 0) + (u.totalTokens || 0);
+            const date = ts.toISOString().split('T')[0];
+            byDate[date] = byDate[date] || { date, tokens: 0, cost: 0, count: 0 };
+            byDate[date].tokens += u.totalTokens || 0;
+            byDate[date].cost += u.cost?.total || 0;
+            byDate[date].count++;
+          } catch { /* malformed line */ }
+        }
+      } catch { /* unreadable file */ }
+    }
+  } catch { /* sessions dir missing */ }
+
+  const topModel = Object.entries(modelCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+  const isLocal = Object.keys(providerCounts).every((p) => p === 'local' || p === 'ollama');
+  const localTokens = (providerCounts['local'] || 0) + (providerCounts['ollama'] || 0);
+  const localPct = totalTokens > 0 ? Math.round((localTokens / totalTokens) * 100) : 0;
+
+  return {
+    agentId: 'data',
+    window: windowDays === 'today' ? 'today' : `${windowDays}d`,
+    totalTokens,
+    totalCost: Math.round(totalCost * 1e6) / 1e6,
+    cloudCost: isLocal ? 0 : Math.round(totalCost * 1e6) / 1e6,
+    localTokens,
+    localPct,
+    messageCount,
+    lastActive,
+    topModel,
+    providerBreakdown: Object.entries(providerCounts).map(([provider, tokens]) => ({
+      provider,
+      tokens,
+      cost: 0,
+      pct: totalTokens > 0 ? Math.round((tokens / totalTokens) * 100) : 0,
+      isLocal: provider === 'local' || provider === 'ollama',
+    })),
+    byDate: Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date)),
+    failures: { rateLimits: 0, authFailures: 0, providerUnavailable: 0, fallbackEvents: 0, recentErrorCount: 0 },
+    health: 'ok',
+  };
+}
+
+async function getWorfTelemetry(window_) {
+  if (!WORF_TELEMETRY_URL) {
+    return { stub: true };
+  }
+  try {
+    const res = await fetch(`${WORF_TELEMETRY_URL}/worf/telemetry?window=${window_}`, {
+      headers: { Authorization: `Bearer ${WORF_RELAY_TOKEN}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return { unavailable: true };
+    return res.json();
+  } catch {
+    return { unavailable: true };
+  }
+}
+
+app.get('/api/telemetry', async (req, reply) => {
+  const window_ = req.query.window || '30d';
+  const days = window_ === 'today' ? 'today' : parseInt(window_) || 30;
+
+  const [dataTelemetry, worfTelemetry] = await Promise.all([
+    getDataTelemetry(days),
+    getWorfTelemetry(window_),
+  ]);
+
+  return reply.send({ data: dataTelemetry, worf: worfTelemetry });
+});
+
 // ─── Agent Chat History ────────────────────────────────────────────────────
 app.get('/api/agent/:agentId/history', async (req, reply) => {
   const { agentId } = req.params;
@@ -593,11 +745,13 @@ app.post('/api/agent/:agentId/chat', async (req, reply) => {
     return reply.code(400).send({ error: 'message required' });
   }
 
-  const { currentView = 'bridge', currentProject = null } = context;
+  const { currentView = 'bridge', currentProject = null, currentTask = null, lastCompleted = null } = context;
 
-  // Build context-prepended message (silent prefix)
-  let contextNote = `[Context: User is viewing "${currentView}" panel`;
-  if (currentProject) contextNote += `, active project: "${currentProject}"`;
+  // Build context-prepended message (silent prefix — sets operational context for the agent)
+  let contextNote = `[Bridge context: viewing "${currentView}" panel`;
+  if (currentProject) contextNote += ` · project: "${currentProject}"`;
+  if (currentTask) contextNote += ` · your current task: "${currentTask}"`;
+  if (lastCompleted) contextNote += ` · last completed: "${lastCompleted}"`;
   contextNote += `]`;
   const fullMessage = `${contextNote}\n\n${message}`;
 
@@ -842,6 +996,15 @@ app.setNotFoundHandler(async (req, reply) => {
   } catch {
     return reply.code(404).send({ error: 'Not found — run npm run build first' });
   }
+});
+
+// ─── Crash resilience ──────────────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  console.error('[lcars] uncaughtException — staying alive:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[lcars] unhandledRejection — staying alive:', reason);
 });
 
 // ─── Start ─────────────────────────────────────────────────────────────────

@@ -16,6 +16,7 @@ import ProjectList from './components/ProjectList.jsx';
 import ProjectDetail from './components/ProjectDetail.jsx';
 import GlobalPanel from './components/GlobalPanel.jsx';
 import BridgePanel from './components/BridgePanel.jsx';
+import EngineeringPanel from './components/EngineeringPanel.jsx';
 
 // API helpers
 const API = {
@@ -146,9 +147,16 @@ export default function App() {
       return (
         <BridgePanel
           agents={agents}
-          tailscale={tailscale}
           currentView={view}
           currentProject={selectedProject?.id || selectedProject?.key?.toLowerCase() || null}
+        />
+      );
+    }
+    if (view === 'engineering') {
+      return (
+        <EngineeringPanel
+          agents={agents}
+          tailscale={tailscale}
         />
       );
     }

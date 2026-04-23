@@ -55,7 +55,7 @@ export default function ProjectList({ projects, loading, onSelect }) {
         <span
           style={{
             fontFamily: 'var(--font-lcars)',
-            fontSize: 11,
+            fontSize: 'var(--text-meta)',
             fontWeight: 700,
             padding: '2px 10px',
             background: 'var(--lcars-gold)',

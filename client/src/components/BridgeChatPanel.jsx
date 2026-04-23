@@ -134,8 +134,8 @@ function StreamingIndicator({ agentConfig }) {
   );
 }
 
-export default function BridgeChatPanel({ currentView = 'bridge', currentProject = null, agents = [] }) {
-  const [activeAgent, setActiveAgent] = useState('data');
+export default function BridgeChatPanel({ currentView = 'bridge', currentProject = null, agents = [], initialAgent = null, initialContext = null }) {
+  const [activeAgent, setActiveAgent] = useState(initialAgent?.name?.toLowerCase() || 'data');
   const [messages, setMessages] = useState({ data: [], worf: [] });
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -216,7 +216,12 @@ export default function BridgeChatPanel({ currentView = 'bridge', currentProject
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          context: { currentView, currentProject },
+          context: {
+            currentView,
+            currentProject: currentProject || initialContext?.activeProject || null,
+            currentTask: initialContext?.currentTask || null,
+            lastCompleted: initialContext?.lastCompleted || null,
+          },
         }),
         signal: controller.signal,
       });
@@ -492,28 +497,38 @@ export default function BridgeChatPanel({ currentView = 'bridge', currentProject
         >
           {/* Context indicator */}
           <div className="bridge-chat-panel__context-bar">
-            <span className="bridge-chat-panel__context-label">VIEW</span>
-            <span
-              className="bridge-chat-panel__context-value"
-              style={{ color: agentConfig.color }}
-            >
-              {currentView?.toUpperCase() || 'BRIDGE'}
-            </span>
-            {currentProject && (
+            {initialContext?.activeProject ? (
               <>
-                <span className="bridge-chat-panel__context-sep">›</span>
-                <span
-                  className="bridge-chat-panel__context-value"
-                  style={{ color: agentConfig.color }}
-                >
-                  {currentProject.toUpperCase()}
+                <span className="bridge-chat-panel__context-label">PROJECT</span>
+                <span className="bridge-chat-panel__context-value" style={{ color: agentConfig.color }}>
+                  {initialContext.activeProject.toUpperCase()}
                 </span>
+                {initialContext?.currentTask && (
+                  <>
+                    <span className="bridge-chat-panel__context-sep">·</span>
+                    <span className="bridge-chat-panel__context-value" style={{ color: 'var(--lcars-gray-light)', textTransform: 'none', letterSpacing: 0, fontFamily: 'var(--font-body)', fontSize: 'var(--text-meta)' }}>
+                      {initialContext.currentTask.length > 50 ? initialContext.currentTask.slice(0, 50) + '…' : initialContext.currentTask}
+                    </span>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="bridge-chat-panel__context-label">VIEW</span>
+                <span className="bridge-chat-panel__context-value" style={{ color: agentConfig.color }}>
+                  {currentView?.toUpperCase() || 'BRIDGE'}
+                </span>
+                {currentProject && (
+                  <>
+                    <span className="bridge-chat-panel__context-sep">›</span>
+                    <span className="bridge-chat-panel__context-value" style={{ color: agentConfig.color }}>
+                      {currentProject.toUpperCase()}
+                    </span>
+                  </>
+                )}
               </>
             )}
-            <span
-              className="bridge-chat-panel__context-agent"
-              style={{ color: agentConfig.color, marginLeft: 'auto' }}
-            >
+            <span className="bridge-chat-panel__context-agent" style={{ color: agentConfig.color, marginLeft: 'auto' }}>
               ⟶ {agentConfig.name}
             </span>
           </div>
